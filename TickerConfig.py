@@ -1,3 +1,4 @@
+# -*- coding=utf-8 -*-
 # 关于软件使用配置说明，一定要看！！！
 # ps: 如果是候补车票，需要通过人证一致性核验的用户及激活的“铁路畅行”会员可以提交候补需求，请您按照操作说明在铁路12306app.上完成人证核验
 # 关于候补了之后是否还能继续捡漏的问题在此说明： 软件为全自动候补加捡漏，如果软件候补成功则会停止抢票，发出邮件通知，但是不会影响你继续捡漏，
@@ -7,18 +8,20 @@
 TICKET_TYPE = 2
 
 # 出发日期(list) "2018-01-06", "2018-01-07"
-STATION_DATES = []
+STATION_DATES = [
+    "2020-01-05"
+]
 
 # 填入需要购买的车次(list)，"G1353"
 # 修改车次填入规则，注：(以前设置的车次逻辑不变)，如果车次填入为空，那么就是当日乘车所有车次都纳入筛选返回
 # 不填车次是整个list为空才算，如果不是为空，依然会判断车次的，这种是错误的写法 [""], 正确的写法 []
-STATION_TRAINS = []
+STATION_TRAINS = ["G1002"]
 
 # 出发城市，比如深圳北，就填深圳就搜得到
-FROM_STATION = ""
+FROM_STATION = "深圳北"
 
 # 到达城市 比如深圳北，就填深圳就搜得到
-TO_STATION = ""
+TO_STATION = "长沙南"
 
 # 座位(list) 多个座位ex:
 # "商务座",
@@ -30,14 +33,15 @@ TO_STATION = ""
 # "硬座",
 # "无座",
 # "动卧",
-SET_TYPE = []
+SET_TYPE = ["硬座"]
+
 # 当余票小于乘车人，如果选择优先提交，则删减联系人和余票数一致在提交
 # bool
 IS_MORE_TICKET = True
 
 # 乘车人(list) 多个乘车人ex:
-# - "张三"
-# - "李四"
+# "张三",
+# "李四"
 TICKET_PEOPLES = []
 
 # 12306登录账号
@@ -51,8 +55,16 @@ TICKET_BLACK_LIST_TIME = 5
 IS_AUTO_CODE = True
 
 # 设置2本地自动打码，需要配置tensorflow和keras库，3为云打码，由于云打码服务器资源有限(为2h4C的cpu服务器)，请不要恶意请求，不然只能关闭服务器
-# ps: 请不要一直依赖云服务器资源，在此向提供服务器的"do it"同学表示感谢
+# ps: 请不要一直依赖云服务器资源，在此向所有提供服务器同学表示感谢
 AUTO_CODE_TYPE = 2
+
+# 此处设置云打码服务器地址，如果有自建的服务器，可以自行更改
+HOST = "120.77.154.140:8000"
+REQ_URL = "/verify/base64/"
+HTTP_TYPE = "http"
+# HOST="12306.yinaoxiong.cn" #备用服务器稳定性较差
+# REQ_URL="/verify/base64/"
+# HTTP_TYPE="https"
 
 #  邮箱配置，如果抢票成功，将通过邮件配置通知给您
 #  列举163
@@ -73,7 +85,7 @@ EMAIL_CONF = {
     "notice_email_list": "",
     "username": "",
     "password": "",
-    "host": "",
+    "host": "smtp.qq.com",
 }
 
 # 是否开启 server酱 微信提醒， 使用前需要前往 http://sc.ftqq.com/3.version 扫码绑定获取 SECRET 并关注获得抢票结果通知的公众号
@@ -104,10 +116,19 @@ IS_PROXY = 0
 OPEN_TIME = "13:00:00"
 # 1=使用selenium获取devicesID
 # 2=使用网页端/otn/HttpZF/logdevice获取devicesId，这个接口的算法目前可能有点问题，如果登录一直302的请改为配置1
-COOKIE_TYPE = 1
+# 3=自己打开浏览器在headers-Cookies中抓取RAIL_DEVICEID和RAIL_EXPIRATION，这个就不用配置selenium
+COOKIE_TYPE = 3
 # 如果COOKIE_TYPE=1，则需配置chromeDriver路径,下载地址http://chromedriver.storage.googleapis.com/index.html
 # chromedriver配置版本只要和chrome的大版本匹配就行
-CHROME_PATH = ""
+CHROME_PATH = "/usr/src/app/chromedriver"
+
+# 为了docker37 准备的环境变量，windows环境可以不用管这个参数
+CHROME_CHROME_PATH = "/opt/google/chrome/google-chrome"
+
+# 如果COOKIE_TYPE=3, 则需配置RAIL_EXPIRATION、RAIL_DEVICEID的值
+RAIL_EXPIRATION = "1576654754825"
+RAIL_DEVICEID = "iIT4N7T5eI7O26P1vMt3oCLWvjlt4O9_ONCjqrKQPkChXEhGnMWKzD7wRJdc-C_1RYHw66659vxUwVxLeyh1MBgR3nf-2sW44mLg7ZMdE2CskpVx0LBsaIjVkQBsjyNH-Gi1lb45BiGGokq_zJUkFubcmj9pSAUu"
+
 
 # 1=>为一直随机ua,2->只启动的时候随机一次ua
 RANDOM_AGENT = 2
@@ -116,12 +137,12 @@ PASSENGER_TICKER_STR = {
     '一等座': 'M',
     '特等座': 'P',
     '二等座': 'O',
-    '商务座': "9",
-    '硬座': "1",
-    '无座': "1",
-    '软座': "2",
-    '软卧': "3",
-    '硬卧': "4",
+    '商务座': 9,
+    '硬座': 1,
+    '无座': 1,
+    '软座': 2,
+    '软卧': 4,
+    '硬卧': 3,
 }
 
 # 保护12306官网请求频率，设置随机请求时间，原则为5分钟不大于80次
@@ -131,4 +152,4 @@ MAX_TIME = 5
 MIN_TIME = 3
 
 # 软件版本
-RE_VERSION = "1.1.114"
+RE_VERSION = "1.2.001"
