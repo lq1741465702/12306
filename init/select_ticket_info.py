@@ -127,27 +127,30 @@ class select:
         t.start()
         from_station, to_station = self.station_table(TickerConfig.FROM_STATION, TickerConfig.TO_STATION)
         num = 0
-        s = getPassengerDTOs(session=self, ticket_peoples=TickerConfig.TICKET_PEOPLES)
+        s = getPassengerDTOs(selectObj=self, ticket_peoples=TickerConfig.TICKET_PEOPLES)
         passenger = s.sendGetPassengerDTOs()
         wrapcache.set("user_info", passenger, timeout=9999999)
+
+        now = datetime.datetime.now()
+        if TickerConfig.ORDER_MODEL is 1:
+            print(f"预售还未开始，阻塞中，预售时间为{TickerConfig.OPEN_TIME}, 当前时间为: {now.strftime('%H:%M:%S')}")
+            sleep_time_s = 0.5
+            sleep_time_t = 0.6
+            # 测试了一下有微妙级的误差，应该不影响，测试结果：2019-01-02 22:30:00.004555，预售还是会受到前一次刷新的时间影响，暂时没想到好的解决方案
+            while now.strftime("%H:%M:%S") < TickerConfig.OPEN_TIME:
+                now = datetime.datetime.now()
+                time.sleep(0.0001)
+            print(f"预售开始，开启时间为: {now.strftime('%H:%M:%S')}")
+        else:
+            sleep_time_s = TickerConfig.MIN_TIME
+            sleep_time_t = TickerConfig.MAX_TIME
+
         while 1:
             try:
                 num += 1
                 now = datetime.datetime.now()  # 感谢群里大佬提供整点代码
                 configCommon.checkSleepTime(self)  # 晚上到点休眠
-                if TickerConfig.ORDER_MODEL is 1:
-                    sleep_time_s = 0.5
-                    sleep_time_t = 0.6
-                    # 测试了一下有微妙级的误差，应该不影响，测试结果：2019-01-02 22:30:00.004555，预售还是会受到前一次刷新的时间影响，暂时没想到好的解决方案
-                    while not now.strftime("%H:%M:%S") == TickerConfig.OPEN_TIME:
-                        now = datetime.datetime.now()
-                        if now.strftime("%H:%M:%S") > TickerConfig.OPEN_TIME:
-                            break
-                        time.sleep(0.0001)
-                else:
-                    sleep_time_s = TickerConfig.MIN_TIME
-                    sleep_time_t = TickerConfig.MAX_TIME
-                q = query(session=self,
+                q = query(selectObj=self,
                           from_station=from_station,
                           to_station=to_station,
                           from_station_h=TickerConfig.FROM_STATION,
@@ -174,7 +177,7 @@ class select:
                         print(ticket.QUEUE_WARNING_MSG.format(train_no))
                     else:
                         # 获取联系人
-                        s = getPassengerDTOs(session=self, ticket_peoples=TickerConfig.TICKET_PEOPLES,
+                        s = getPassengerDTOs(selectObj=self, ticket_peoples=TickerConfig.TICKET_PEOPLES,
                                              set_type="" if isinstance(seat, list) else seat_conf_2[seat],
                                              # 候补订单需要设置多个坐席
                                              is_more_ticket_num=is_more_ticket_num)
@@ -189,7 +192,7 @@ class select:
                         # 订单分为两种，一种为抢单，一种为候补订单
                         if secretStr:  # 正常下单
                             if TickerConfig.ORDER_TYPE == 1:  # 快速下单
-                                a = autoSubmitOrderRequest(session=self,
+                                a = autoSubmitOrderRequest(selectObj=self,
                                                            secretStr=secretStr,
                                                            train_date=train_date,
                                                            passengerTicketStr=self.passengerTicketStrList,
@@ -214,7 +217,7 @@ class select:
                 else:
                     random_time = round(random.uniform(sleep_time_s, sleep_time_t), 2)
                     nateMsg = ' 无候补机会' if TickerConfig.ORDER_TYPE == 2 else ""
-                    print(f"正在第{num}次查询 随机停留时长：{random_time} 乘车日期: {','.join(TickerConfig.STATION_DATES)} 车次：{','.join(TickerConfig.STATION_TRAINS) or '所有车次'} 下单无票{nateMsg} 耗时：{(datetime.datetime.now() - now).microseconds / 1000}ms")
+                    print(f"正在第{num}次查询 停留时间：{random_time} 乘车日期: {','.join(TickerConfig.STATION_DATES)} 车次：{','.join(TickerConfig.STATION_TRAINS) or '所有车次'} 下单无票{nateMsg} 耗时：{(datetime.datetime.now() - now).microseconds / 1000} {queryResult.get('cdn')}")
                     time.sleep(random_time)
             except PassengerUserException as e:
                 print(e)
